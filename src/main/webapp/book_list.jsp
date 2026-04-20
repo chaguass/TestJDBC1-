@@ -1,67 +1,135 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ page import="java.sql.*" %>
-<!DOCTYPE html>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="java.util.List" %>
+<%@ page import="model.Book" %>
+<%@ page import="dao.BookDaoImpl" %>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>图书列表</title>
+    <title>图书管理列表</title>
     <style>
-        body{padding:20px;}
-        table{border-collapse:collapse;width:90%;margin:20px auto;}
-        th,td{border:1px solid #ccc;padding:8px;text-align:center;}
-        th{background:#4CAF50;color:white;}
-        a{margin:0 5px;text-decoration:none;color:#069;}
-        .add{display:block;margin:0 auto;width:120px;text-align:center;background:#4CAF50;color:white;padding:6px;border-radius:4px;}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        body {
+            background-color: #f5f7fa;
+            padding: 30px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .btn {
+            background-color: #409EFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover {
+            background-color: #66b1ff;
+        }
+        .btn-success {
+            background-color: #67C23A;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        th, td {
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+        th {
+            background-color: #409EFF;
+            color: white;
+        }
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+        .operate a {
+            margin: 0 5px;
+            color: #409EFF;
+            text-decoration: none;
+        }
+        .operate a:hover {
+            color: #66b1ff;
+        }
     </style>
 </head>
 <body>
-<h2 align="center">图书信息列表</h2>
-<a href="book_add.jsp" class="add">添加新图书</a>
-<table>
-    <tr>
-        <th>图书ID</th><th>书名</th><th>作者</th><th>出版社</th><th>出版年份</th><th>库存</th><th>总册数</th><th>操作</th>
-    </tr>
-    <%
-        // ========== 关键修改：改成你实际的数据库信息 ==========
-        String driver = "com.mysql.cj.jdbc.Driver";
-        // 把 infodb 改成你自己的数据库名（实验3用的是infodb）
-        String url = "jdbc:mysql://localhost:3306/infodb?useSSL=false&serverTimezone=UTC&characterEncoding=UTF-8";
-        String user = "root"; // 你的数据库账号
-        String password = "123456"; // 你的数据库密码
-        // ====================================================
+<div class="container">
+    <div class="header">
+        <h1>图书管理列表</h1>
+        <div class="btn-group">
+            <!-- 原有：添加新书按钮 -->
+            <a href="book_add.jsp" class="btn">➕ 添加新书</a>
+            <!-- 新增：跳转到实验5 可借阅图书页面 -->
+            <a href="availableBooks" class="btn btn-success">📖 查看可借阅图书</a>
+        </div>
+    </div>
 
-        Connection conn = null;
-        Statement stmt = null;
-        ResultSet rs = null;
-        try{
-            Class.forName(driver);
-            conn = DriverManager.getConnection(url, user, password);
-            stmt = conn.createStatement();
-            String sql = "SELECT * FROM books";
-            rs = stmt.executeQuery(sql);
-            while(rs.next()){
-    %>
-    <tr>
-        <td><%=rs.getInt("book_id")%></td>
-        <td><%=rs.getString("title")%></td>
-        <td><%=rs.getString("author")%></td>
-        <td><%=rs.getString("publisher")%></td>
-        <td><%=rs.getString("publish_year")%></td>
-        <td><%=rs.getInt("stock")%></td>
-        <td><%=rs.getInt("total_copies")%></td>
-        <td>
-            <a href="book_edit.jsp?book_id=<%=rs.getInt("book_id")%>">修改</a>
-            <a href="book_delete.jsp?book_id=<%=rs.getInt("book_id")%>" onclick="return confirm('确定删除？')">删除</a>
-        </td>
-    </tr>
-    <%
+    <table>
+        <tr>
+            <th>图书ID</th>
+            <th>书名</th>
+            <th>作者</th>
+            <th>出版社</th>
+            <th>出版年份</th>
+            <th>库存</th>
+            <th>总副本数</th>
+            <th>操作</th>
+        </tr>
+        <%
+            // 调用新增的findAllBook方法
+            BookDaoImpl dao = new BookDaoImpl();
+            List<Book> list = dao.findAllBook();
+            if (list != null && !list.isEmpty()) {
+                for (Book book : list) {
+        %>
+        <tr>
+            <td><%= book.getBookId() %></td>
+            <td><%= book.getTitle() %></td>
+            <td><%= book.getAuthor() %></td>
+            <td><%= book.getPublisher() %></td>
+            <td><%= book.getPublishYear() %></td>
+            <td><%= book.getStock() %></td>
+            <td><%= book.getTotalCopies() %></td>
+            <td class="operate">
+                <a href="book_edit.jsp?book_id=<%= book.getBookId() %>">修改</a>
+                <a href="book_delete.jsp?book_id=<%= book.getBookId() %>" onclick="return confirm('确定删除？')">删除</a>
+            </td>
+        </tr>
+        <%
+                }
             }
-        }catch(Exception e){
-            out.print("查询失败："+e.getMessage());
-        }finally{
-            try{if(rs!=null)rs.close();if(stmt!=null)stmt.close();if(conn!=null)conn.close();}catch(SQLException e){}
-        }
-    %>
-</table>
+        %>
+    </table>
+</div>
 </body>
 </html>
